@@ -1,0 +1,110 @@
+#!/bin/bash
+
+### MP3 Splitter Usage:help
+#
+#      mp3split AUDIOFILE TRACKFILE
+#
+# Split an MP3 into several files, according to its track list
+#
+# The track list must match the below format, specifying time extents, then track number, then the track title.
+# Meta variables at the top of the file can be specified for the IDv3 tags.
+# Blank lines and lines starting with `#` are ignored.
+#
+#
+#      %artist Artist Name
+#      %album Album Title
+#
+#      00:00:00-00:02:31 01 Title of first track
+#      00:02:31-00:05:13 02 Second track's title
+#
+#
+#
+# You can spread variables around the file too; this is typically useful for including additional artists
+#
+#      %artist Music Pearson
+#      %album Album Title
+#
+#      00:00:00-00:02:31 01 First Track
+#
+#      %artist Music Pearson, feat. Guy Other
+#      00:02:31-00:05:13 02 Collabo Title (feat. Guy Other)
+#
+#      %artist Music Pearson
+#      00:05:13-00:07:42 03 Back to Soloing
+# 
+###/doc
+
+# not supported - need to use an IDv3 tag editor after the fiels are split out
+#
+#   %year Year
+#   %genre Genre description
+#
+# ##/doc
+
+#%include autohelp.sh safe.sh varify.sh out.sh
+
+m3s:split() {
+    local extents="$1"; shift
+
+
+    TITLE="$1"; shift
+    local title="$(varify:fil "$TITLE")"
+
+    SUBFILE="$tracknum-$title"
+
+    (set -x
+        mp3cut -o "$SUBFILE.mp3" -T "$TITLE" -A "$ARTIST" -N "$ALBUM" -t "$extents" "$MAINMP3"
+    )
+}
+
+m3s:set_variable() {
+    case "$1" in
+        %album)
+            ALBUM="$2"
+            ALBUMF="$(varify:fil "$ALBUM")"
+            ;;
+        %year)
+            YEAR="$2" ;;
+        %artist)
+            ARTIST="$2"
+            ARTISTF="$(varify:fil "$ARTIST")"
+            ;;
+        %genre)
+            GENRE="$2" ;;
+    esac
+}
+
+m3s:readtracks() {
+    local token remains
+
+    while read token trackn remains; do
+        if (echo "$token"|grep -Pq '(^\s*#)|(^\s*$)'); then
+            continue
+
+        elif [[ "$token" =~ ^% ]]; then
+            m3s:set_variable "$token" "$remains"
+
+        elif (echo "$token"|grep -Pq '^\d\d:\d\d:\d\d-\d\d:\d\d:\d\d$'); then
+            tracknum="$trackn"
+            m3s:split "$token" "$remains"
+
+        else
+            out:error "Unexpected line [$token] [$remains] - did you add the Hours portion in the time offsets ?"
+        fi
+    done < "$TRACKFILE"
+}
+
+main() {
+    autohelp:check "$@"
+    [[ -n "$*" ]] || { autohelp:print ; exit 0 ; }
+
+    MAINMP3="$1"; shift || :
+    TRACKFILE="$1"; shift || :
+
+    ALBUM="$(varify:fil "${MAINMP3%.*}")"
+    ALBUMF="$ALBUM"
+
+    m3s:readtracks
+}
+
+main "$@"

@@ -1,0 +1,2 @@
+BUILDOUTD=bin/
+BBFILES=src/mp3split

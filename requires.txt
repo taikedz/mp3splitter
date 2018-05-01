@@ -1,0 +1,5 @@
+# Deb package
+poc-streamer
+
+# Build
+https://github.com/taikedz/bash-builder
