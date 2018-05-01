@@ -4,6 +4,8 @@
 #
 #      mp3split AUDIOFILE TRACKFILE
 #
+#      mp3split align TRACKFILE
+#
 # Split an MP3 into several files, according to its track list
 #
 # The track list must match the below format, specifying time extents, then track number, then the track title.
@@ -17,6 +19,14 @@
 #      00:00:00-00:02:31 01 Title of first track
 #      00:02:31-00:05:13 02 Second track's title
 #
+#
+# If you only have a file with track start times like
+#
+#      00:00:00 01 Title of first track
+#      00:02:31 02 Second track's title
+#      00:05:13 (end of tracks)
+# 
+# Then you can run `mp3split align your-trackfile.txt` ; this will align all the times found in the file, though note that the last time entry should simply be the end of the last track.
 #
 #
 # You can spread variables around the file too; this is typically useful for including additional artists
@@ -94,12 +104,39 @@ m3s:readtracks() {
     done < "$TRACKFILE"
 }
 
+m3s:align_times() {
+    local previous_t next_t previous_d next_d time description
+
+    while read time description; do
+        if ! (echo "$time" | grep -Pq '^\d\d:\d\d:\d\d'); then
+            echo "$time $description"
+            continue
+        fi
+
+        previous_t="${next_t:-}"
+        next_t="${time:-}"
+
+        previous_d="${next_d:-}"
+        next_d="${description:-}"
+
+        [[ -n "$previous_t" ]] || continue
+
+        echo "$previous_t-$next_t $previous_d"
+    done
+}
+
+
 main() {
     autohelp:check "$@"
     [[ -n "$*" ]] || { autohelp:print ; exit 0 ; }
 
     MAINMP3="$1"; shift || :
     TRACKFILE="$1"; shift || :
+
+	if [[ "$MAINMP3" = align ]]; then
+        m3s:align_times < "$TRACKFILE"
+        exit
+    fi
 
     ALBUM="$(varify:fil "${MAINMP3%.*}")"
     ALBUMF="$ALBUM"

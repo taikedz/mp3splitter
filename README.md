@@ -2,8 +2,9 @@
 
 Given an MP3 file, and track listing with times as `hh:mm:ss TRACKNUM TRACKNAME`, create individual MP3 files.
 
-        mp3split AUDIOFILE TRACKFILE
+      mp3split AUDIOFILE TRACKFILE
 
+      mp3split align TRACKFILE
 
 Split an MP3 into several files, according to its track list
 
@@ -18,6 +19,14 @@ Blank lines and lines starting with `#` are ignored.
       00:00:00-00:02:31 01 Title of first track
       00:02:31-00:05:13 02 Second track's title
 
+
+If you only have a file with track start times like
+
+      00:00:00 01 Title of first track
+      00:02:31 02 Second track's title
+      00:05:13 (end of tracks)
+
+Then you can run `mp3split align your-trackfile.txt` ; this will align all the times found in the file, though note that the last time entry should simply be the end of the last track.
 
 
 You can spread variables around the file too; this is typically useful for including additional artists
