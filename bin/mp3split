@@ -559,7 +559,7 @@ m3s:readtracks() {
             continue
 
         elif [[ "$token" =~ ^% ]]; then
-            m3s:set_variable "$token" "$remains"
+            m3s:set_variable "$token" "$trackn $remains"
 
         elif (echo "$token"|grep -Pq '^\d\d:\d\d:\d\d-\d\d:\d\d:\d\d$'); then
             tracknum="$trackn"
