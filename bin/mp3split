@@ -537,7 +537,6 @@ m3s:listing:frontify() {
 
 m3s:listing:align_times() {
     local previous_t next_t previous_d next_d time description
-
     while read time description; do
         if ! (echo "$time" | grep -Pq '^(\d\d:)?\d\d:\d\d'); then
             echo "$time $description"
@@ -587,7 +586,8 @@ m3s:set_variable() {
 }
 
 m3s:readtracks() {
-    local token remains
+    local token remains res
+    res=0
 
     while read token trackn remains; do
         if (echo "$token"|grep -Pq '(^\s*#)|(^\s*$)'); then
@@ -602,8 +602,11 @@ m3s:readtracks() {
 
         else
             out:error "Could not process line [$token] [$trackn] [$remains]"
+            res=1
         fi
     done
+
+    return $res
 }
 
 
@@ -618,7 +621,7 @@ main() {
     ALBUMF="$ALBUM"
 
 
-	if [[ "$MAINMP3" = align ]]; then
+    if [[ "$MAINMP3" = align ]]; then
         m3s:listing:frontify < "$TRACKFILE" | m3s:listing:align_times
     else
         [[ -f "$MAINMP3" ]] || out:fail "'$MAINMP3' : not a file."

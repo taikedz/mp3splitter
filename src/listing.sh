@@ -14,7 +14,6 @@ m3s:listing:frontify() {
 
 m3s:listing:align_times() {
     local previous_t next_t previous_d next_d time description
-
     while read time description; do
         if ! (echo "$time" | grep -Pq '^(\d\d:)?\d\d:\d\d'); then
             echo "$time $description"
