@@ -2,11 +2,13 @@
 
 ### MP3 Splitter Usage:help
 #
-#      mp3split AUDIOFILE TRACKFILE
+#      mp3split { align | MP3FILE } TRACKFILE
 #
-#      mp3split align TRACKFILE
+# Split an MP3 into several files, according to its track list.
 #
-# Split an MP3 into several files, according to its track list
+# Use the `align` command instead of an MP3 file name to see how the track listing is processed.
+#
+# MP3FILE must be a path to an MP3 file.
 #
 # The track list must match the below format, specifying time extents, then track number, then the track title.
 # Meta variables at the top of the file can be specified for the IDv3 tags.
@@ -519,10 +521,43 @@ function out:break {
 if [[ "$MODE_DEBUG_VERBOSE" = true ]]; then
     set -x
 fi
+m3s:listing:frontify() {
+    # Move times at the ends of lines to the front of the line
+    local textline
+
+    while read textline; do
+        if [[ "$textline" =~ ^(.+?)\ +([0-9:]+)$ ]]; then
+            echo "${BASH_REMATCH[2]} ${BASH_REMATCH[1]}"
+        else
+            echo "$textline"
+        fi
+    done
+}
+
+
+m3s:listing:align_times() {
+    local previous_t next_t previous_d next_d time description
+
+    while read time description; do
+        if ! (echo "$time" | grep -Pq '^(\d\d:)?\d\d:\d\d'); then
+            echo "$time $description"
+            continue
+        fi
+
+        previous_t="${next_t:-}"
+        next_t="${time:-}"
+
+        previous_d="${next_d:-}"
+        next_d="${description:-}"
+
+        [[ -n "$previous_t" ]] || continue
+
+        echo "$previous_t-$next_t $previous_d"
+    done
+}
 
 m3s:split() {
     local extents="$1"; shift
-
 
     TITLE="$1"; shift
     local title="$(varify:fil "$TITLE")"
@@ -530,7 +565,7 @@ m3s:split() {
     SUBFILE="$tracknum-$title"
 
     (set -x
-        mp3cut -o "$SUBFILE.mp3" -T "$TITLE" -A "$ARTIST" -N "$ALBUM" -t "$extents" "$MAINMP3"
+        mp3cut -o "$SUBFILE.mp3" -T "${TITLE:-}" -A "${ARTIST:-}" -N "${ALBUM:-}" -t "$extents" "$MAINMP3"
     )
 }
 
@@ -561,34 +596,13 @@ m3s:readtracks() {
         elif [[ "$token" =~ ^% ]]; then
             m3s:set_variable "$token" "$trackn $remains"
 
-        elif (echo "$token"|grep -Pq '^\d\d:\d\d:\d\d-\d\d:\d\d:\d\d$'); then
+        elif (echo "$token"|grep -Pq '^(\d\d:)?\d\d:\d\d-(\d\d:)?\d\d:\d\d$'); then
             tracknum="$trackn"
-            m3s:split "$token" "$remains"
+            [[ "${M3S_preprocess:-}" = true ]] || m3s:split "$token" "$remains"
 
         else
-            out:error "Unexpected line [$token] [$remains] - did you add the Hours portion in the time offsets ?"
+            out:error "Could not process line [$token] [$trackn] [$remains]"
         fi
-    done < "$TRACKFILE"
-}
-
-m3s:align_times() {
-    local previous_t next_t previous_d next_d time description
-
-    while read time description; do
-        if ! (echo "$time" | grep -Pq '^\d\d:\d\d:\d\d'); then
-            echo "$time $description"
-            continue
-        fi
-
-        previous_t="${next_t:-}"
-        next_t="${time:-}"
-
-        previous_d="${next_d:-}"
-        next_d="${description:-}"
-
-        [[ -n "$previous_t" ]] || continue
-
-        echo "$previous_t-$next_t $previous_d"
     done
 }
 
@@ -600,15 +614,21 @@ main() {
     MAINMP3="$1"; shift || :
     TRACKFILE="$1"; shift || :
 
-	if [[ "$MAINMP3" = align ]]; then
-        m3s:align_times < "$TRACKFILE"
-        exit
-    fi
-
     ALBUM="$(varify:fil "${MAINMP3%.*}")"
     ALBUMF="$ALBUM"
 
-    m3s:readtracks
+
+	if [[ "$MAINMP3" = align ]]; then
+        m3s:listing:frontify < "$TRACKFILE" | m3s:listing:align_times
+    else
+        [[ -f "$MAINMP3" ]] || out:fail "'$MAINMP3' : not a file."
+
+        # Process all lines first, without doing a conversion
+        #   wrap in subshell to avoid inadvertently setting variables
+        (m3s:listing:frontify < "$TRACKFILE" | m3s:listing:align_times | M3S_preprocess=true m3s:readtracks)
+
+        m3s:listing:frontify < "$TRACKFILE" | m3s:listing:align_times | m3s:readtracks
+    fi
 }
 
 main "$@"
