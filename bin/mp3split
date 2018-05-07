@@ -10,6 +10,12 @@
 #
 # MP3FILE must be a path to an MP3 file.
 #
+#   mp3split length MP3FILE
+#
+# Display the play length of the MP3 file.
+#
+# ## Track list file
+#
 # The track list must match the below format, specifying time extents, then track number, then the track title.
 # Meta variables at the top of the file can be specified for the IDv3 tags.
 # Blank lines and lines starting with `#` are ignored.
@@ -521,6 +527,15 @@ function out:break {
 if [[ "$MODE_DEBUG_VERBOSE" = true ]]; then
     set -x
 fi
+m3s:listing:length() {
+    ([[ -n "${1:-}" ]] && [[ -f "$1" ]]) || out:fail "Specify an MP3 file to check"
+
+    local mp3f
+    mp3f="$1"; shift
+
+    mp3length "$mp3f" | sed -r "s/\+.+$//"
+}
+
 m3s:listing:frontify() {
     # Move times at the ends of lines to the front of the line
     local textline
@@ -623,14 +638,17 @@ main() {
     autohelp:check "$@"
     [[ -n "$*" ]] || { autohelp:print ; exit 0 ; }
 
-    TRACKFILE="$1"; shift || :
-    MAINMP3="$1"; shift || :
+    TRACKFILE="${1:-}"; shift || out:fail "No track file specified"
+    MAINMP3="${1:-}"; shift || out:fail "No MP3 file specified"
 
     ALBUM="$(varify:fil "${MAINMP3%.*}")"
     ALBUMF="$ALBUM"
 
 
-    if [[ "$MAINMP3" = align ]]; then
+    if [[ "$TRACKFILE" = length ]]; then
+        m3s:listing:length "$MAINMP3"
+
+    elif [[ "$MAINMP3" = align ]]; then
         m3s:listing:align
 
     else

@@ -8,6 +8,12 @@
 #
 # MP3FILE must be a path to an MP3 file.
 #
+#   mp3split length MP3FILE
+#
+# Display the play length of the MP3 file.
+#
+# ## Track list file
+#
 # The track list must match the below format, specifying time extents, then track number, then the track title.
 # Meta variables at the top of the file can be specified for the IDv3 tags.
 # Blank lines and lines starting with `#` are ignored.

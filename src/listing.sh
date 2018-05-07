@@ -1,3 +1,12 @@
+m3s:listing:length() {
+    ([[ -n "${1:-}" ]] && [[ -f "$1" ]]) || out:fail "Specify an MP3 file to check"
+
+    local mp3f
+    mp3f="$1"; shift
+
+    mp3length "$mp3f" | sed -r "s/\+.+$//"
+}
+
 m3s:listing:frontify() {
     # Move times at the ends of lines to the front of the line
     local textline

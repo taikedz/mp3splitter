@@ -65,14 +65,17 @@ main() {
     autohelp:check "$@"
     [[ -n "$*" ]] || { autohelp:print ; exit 0 ; }
 
-    TRACKFILE="$1"; shift || :
-    MAINMP3="$1"; shift || :
+    TRACKFILE="${1:-}"; shift || out:fail "No track file specified"
+    MAINMP3="${1:-}"; shift || out:fail "No MP3 file specified"
 
     ALBUM="$(varify:fil "${MAINMP3%.*}")"
     ALBUMF="$ALBUM"
 
 
-    if [[ "$MAINMP3" = align ]]; then
+    if [[ "$TRACKFILE" = length ]]; then
+        m3s:listing:length "$MAINMP3"
+
+    elif [[ "$MAINMP3" = align ]]; then
         m3s:listing:align
 
     else

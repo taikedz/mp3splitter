@@ -7,6 +7,7 @@ Usage
 
 * Get an MP3 file
 * Identify the start times of each track
+    * You can use the `mp3split length TRACKFILE` command to print this for example
 * Write track times and track titles to a track list file
 * Run the splitter command
 
@@ -22,6 +23,7 @@ Use the `align` command instead of an MP3 file name to see how the track listing
 * Meta variables at the top of the file can be specified for the IDv3 tags.
 * Blank lines and lines starting with `#` are ignored.
 * The last track time line must be the end time of the last track (typically, the original MP3's duration time)
+    * Otherwise the last track is ignored
 
 Examples - a front-timed sequence
 
