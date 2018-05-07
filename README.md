@@ -10,7 +10,7 @@ Usage
 * Write track times and track titles to a track list file
 * Run the splitter command
 
-      mp3split { align | MP3FILE } TRACKFILE
+      mp3split TRACKFILE { align | MP3FILE }
 
 Use the `align` command instead of an MP3 file name to see how the track listing is processed.
 

@@ -2,7 +2,7 @@
 
 ### MP3 Splitter Usage:help
 #
-#      mp3split { align | MP3FILE } TRACKFILE
+#      mp3split TRACKFILE { align | MP3FILE }
 #
 # Split an MP3 into several files, according to its track list.
 #
@@ -555,6 +555,14 @@ m3s:listing:align_times() {
     done
 }
 
+m3s:listing:comment_filter() {
+    grep -Pv '(^\s*#)|(^\s*$)'
+}
+
+m3s:listing:align() {
+    m3s:listing:comment_filter < "$TRACKFILE" | m3s:listing:frontify | m3s:listing:align_times
+}
+
 m3s:split() {
     local extents="$1"; shift
 
@@ -564,7 +572,12 @@ m3s:split() {
     SUBFILE="$tracknum-$title"
 
     (set -x
-        mp3cut -o "$SUBFILE.mp3" -T "${TITLE:-}" -A "${ARTIST:-}" -N "${ALBUM:-}" -t "$extents" "$MAINMP3"
+        mp3cut -o "$SUBFILE.mp3" \
+            -T "${TITLE:-}" \
+            -A "${ARTIST:-}" \
+            -N "${ALBUM:-}" \
+            -t "$extents" \
+            "$MAINMP3"
     )
 }
 
@@ -585,15 +598,12 @@ m3s:set_variable() {
     esac
 }
 
-m3s:readtracks() {
+m3s:processtracks() {
     local token remains res
     res=0
 
     while read token trackn remains; do
-        if (echo "$token"|grep -Pq '(^\s*#)|(^\s*$)'); then
-            continue
-
-        elif [[ "$token" =~ ^% ]]; then
+        if [[ "$token" =~ ^% ]]; then
             m3s:set_variable "$token" "$trackn $remains"
 
         elif (echo "$token"|grep -Pq '^(\d\d:)?\d\d:\d\d-(\d\d:)?\d\d:\d\d$'); then
@@ -609,28 +619,28 @@ m3s:readtracks() {
     return $res
 }
 
-
 main() {
     autohelp:check "$@"
     [[ -n "$*" ]] || { autohelp:print ; exit 0 ; }
 
-    MAINMP3="$1"; shift || :
     TRACKFILE="$1"; shift || :
+    MAINMP3="$1"; shift || :
 
     ALBUM="$(varify:fil "${MAINMP3%.*}")"
     ALBUMF="$ALBUM"
 
 
     if [[ "$MAINMP3" = align ]]; then
-        m3s:listing:frontify < "$TRACKFILE" | m3s:listing:align_times
+        m3s:listing:align
+
     else
         [[ -f "$MAINMP3" ]] || out:fail "'$MAINMP3' : not a file."
 
         # Process all lines first, without doing a conversion
         #   wrap in subshell to avoid inadvertently setting variables
-        (m3s:listing:frontify < "$TRACKFILE" | m3s:listing:align_times | M3S_preprocess=true m3s:readtracks)
+        (m3s:listing:align | M3S_preprocess=true m3s:processtracks)
 
-        m3s:listing:frontify < "$TRACKFILE" | m3s:listing:align_times | m3s:readtracks
+        m3s:listing:align | m3s:processtracks
     fi
 }
 

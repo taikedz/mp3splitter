@@ -31,3 +31,11 @@ m3s:listing:align_times() {
         echo "$previous_t-$next_t $previous_d"
     done
 }
+
+m3s:listing:comment_filter() {
+    grep -Pv '(^\s*#)|(^\s*$)'
+}
+
+m3s:listing:align() {
+    m3s:listing:comment_filter < "$TRACKFILE" | m3s:listing:frontify | m3s:listing:align_times
+}
