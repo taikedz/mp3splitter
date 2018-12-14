@@ -2,7 +2,11 @@
 
 #%include helptext.sh
 
-#%include autohelp.sh safe.sh varify.sh out.sh
+#%include std/autohelp.sh
+#%include std/safe.sh
+#%include std/varify.sh
+#%include std/out.sh
+
 #%include listing.sh
 
 m3s:split() {
